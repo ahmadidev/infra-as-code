@@ -1,0 +1,16 @@
+- name: Apply gitlab config
+  hosts: gitlab
+  become: yes
+  remote_user: infra
+
+  tasks:
+  - name: Copy config to /etc/gitlab/gitlab.rb
+    ansible.builtin.copy:
+      src: gitlab.rb
+      dest: /etc/gitlab/gitlab.rb
+    notify:
+      - Reconfigure gitlab
+
+  handlers:
+  - name: Reconfigure gitlab
+    command: gitlab-ctl reconfigure

@@ -1,0 +1,19 @@
+- name: Set docker http and https proxy
+  hosts: workers
+  become: yes
+  remote_user: infra
+
+  tasks:
+  - name: Ensures /etc/systemd/system/docker.service.d/ dir exists
+    file: path=/etc/systemd/system/docker.service.d/ state=directory
+
+  - name: Copy docker-http-https-proxy.conf to worker node
+    ansible.builtin.copy:
+      src: docker-http-https-proxy.conf
+      dest: /etc/systemd/system/docker.service.d/http-http-proxy.conf
+  
+  - name: Restart service docker, in all cases, also issue daemon-reload to pick up config changes
+    ansible.builtin.systemd:
+      state: restarted
+      daemon_reload: yes
+      name: docker

@@ -1,0 +1,12 @@
+- name: Update gitlab
+  hosts: gitlab
+  become: yes
+  remote_user: infra
+
+  tasks:
+  - name: Update gitlab
+    apt:
+      name: gitlab-ee
+      state: latest
+      update_cache: true
+      only_upgrade: true

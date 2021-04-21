@@ -1,0 +1,9 @@
+- name: Apply Timezone servers to Asia/Tehran
+  hosts: all
+  become: yes
+  remote_user: infra
+
+  tasks:
+  - name: Set timezone to Asia/Tehran
+    community.general.timezone:
+      name: Asia/Tehran

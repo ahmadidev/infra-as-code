@@ -1,0 +1,25 @@
+- name: Config prometheus using helm
+  hosts: console
+  become: yes
+  remote_user: infra
+
+  tasks:
+  - name: Add prometheus-community chart repo
+    community.kubernetes.helm_repository:
+      name: prometheus-community
+      repo_url: "https://prometheus-community.github.io/helm-charts"
+
+  - name: Copy file to /tmp for using in helm install
+    ansible.builtin.copy:
+      src: values.yaml
+      dest: /tmp/kube-prometheus-stack-values.yaml
+
+  - name: Deploy latest version of kube-prometheus-stack chart inside monitoring namespace (and create it)
+    community.kubernetes.helm:
+      name: kube-prometheus-stack
+      chart_ref: prometheus-community/kube-prometheus-stack
+      release_namespace: monitoring
+      create_namespace: true
+      kubeconfig: /home/infra/.kube/config
+      values_files:
+        - /tmp/kube-prometheus-stack-values.yaml

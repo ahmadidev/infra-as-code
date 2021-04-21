@@ -1,0 +1,21 @@
+[console]
+console1 ansible_host==10.0.0.3  ansible_user=infra
+
+[haproxy]
+haproxy1 ansible_host==10.0.0.4 ansible_user=infra
+
+[kmasters]
+master1 ansible_host=10.0.0.5 ansible_user=infra
+
+[kworkers]
+worker1 ansible_host==10.0.0.6 ansible_user=infra
+worker2 ansible_host==10.0.0.7 ansible_user=infra
+
+[gitlab]
+gitlab1 ansible_host==10.0.0.8 ansible_user=infra
+
+[build]
+build1 ansible_host==10.0.0.9 ansible_user=infra
+
+# proxy server
+proxy1 ansible_host==10.0.0.10 ansible_user=infra

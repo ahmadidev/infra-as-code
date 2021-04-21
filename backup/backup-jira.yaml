@@ -1,0 +1,31 @@
+# Jira suggests to use native db backup tool: https://confluence.atlassian.com/adminjiraserver/backing-up-data-938847673.html
+# Native db backup tool: https://www.postgresql.org/docs/9.2/backup-dump.html
+
+- name: Backup jira
+  hosts: jira
+  become: yes
+  remote_user: infra
+
+  vars:
+    backup_temp_path: /tmp/jira-postgres-dump-{{ ansible_date_time.date }}.sql
+
+  tasks:
+  - name: Backup jira postgresql db
+    ansible.builtin.command: 'pg_dump --compress=9 --file={{ backup_temp_path }} jiradb'
+    become_user: postgres
+
+  - name: Zip postgres backup, jira app data, and ssh_host keys
+    ansible.builtin.shell: "zip --password {{ ZIP_PASS | quote }} -r /home/infra/full-backup-jira-host-{{ ansible_date_time.date }}.zip '/var/atlassian/application-data/jira/data' $(echo /etc/ssh/ssh_host_*)"
+
+  - name: Upload full backup to ftp server
+    ansible.builtin.command: "curl -T /home/infra/full-backup-jira-host-{{ ansible_date_time.date }}.zip {{ FTP_SERVER }} --user {{ FTP_USER | quote }}:{{ FTP_PASS | quote }}"
+
+  - name: Remove backup temp file
+    ansible.builtin.file:
+      path: '{{ backup_temp_path }}'
+      state: absent
+
+  - name: Remove full backup file
+    ansible.builtin.file:
+      path: '/home/infra/full-backup-jira-host-{{ ansible_date_time.date }}.zip'
+      state: absent

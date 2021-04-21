@@ -1,0 +1,83 @@
+stages:
+  - config
+  - update
+  - backup
+
+config-gitlab:
+  stage: config
+  script:
+    - ansible-playbook -i hosts gitlab/apply-config.yaml
+  when: manual
+
+config-haproxy:
+  stage: config
+  script:
+    - ansible-playbook -i hosts haproxy/apply-config.yaml
+  when: manual
+
+config-kube:
+  stage: config
+  script:
+    - ansible-playbook -i hosts kube/shared-dependencies.yaml
+    - ansible-playbook -i hosts kube/masters.yaml
+    - ansible-playbook -i hosts kube/workers.yaml
+  when: manual
+
+config-prometheus:
+  stage: config
+  script:
+    - ansible-playbook -i hosts prometheus/helm-config.yaml
+  when: manual
+
+set-proxy:
+  stage: config
+  script:
+    - ansible-playbook -i hosts set-proxy/set-docker-proxy.yaml
+  when: manual
+
+config-timezone:
+  stage: config
+  script:
+    - ansible-playbook -i hosts timezone/config.yaml
+  when: manual
+
+update-gitlab:
+  stage: update
+  script:
+    - ansible-playbook -i hosts gitlab/update.yaml
+  when: manual
+
+variables:
+  #Passed from schedule
+  ZIP_PASS: _
+
+backup-k8s:
+  stage: backup
+  script:
+    - chmod +x backup/backup-k8s.sh
+    - scp backup/backup-k8s.sh infra@10.0.0.3:/home/infra/
+    - ssh infra@10.0.0.3 ZIP_PASS=$ZIP_PASS /home/infra/backup-k8s.sh
+  only:
+    - schedules
+
+backup-gitlab:
+  stage: backup
+  script:
+    - ansible-playbook --extra-vars "ZIP_PASS=$ZIP_PASS" -i hosts backup/backup-gitlab.yaml
+  only:
+    - schedules
+
+backup-jira:
+  stage: backup
+  script:
+    - ansible-playbook --extra-vars "ZIP_PASS=$ZIP_PASS" -i hosts backup/backup-jira.yaml
+  only:
+    - schedules
+
+backup-rocketchat:
+  stage: backup
+  script:
+    - chmod +x backup/backup-rocketchat.sh
+    - ./backup/backup-rocketchat.sh
+  only:
+    - schedules

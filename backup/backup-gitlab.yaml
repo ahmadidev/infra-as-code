@@ -1,0 +1,28 @@
+- name: Backup gitlab
+  hosts: gitlab
+  become: yes
+  remote_user: infra
+  
+  tasks:
+  - name: Run gitlab-create backup
+    ansible.builtin.command: gitlab-backup create
+    register: cmd_out
+
+  - set_fact:
+      backup_filename: "{{ cmd_out.stdout | regex_search('[a-z0-9-_\\.]+\\.tar') }}"
+
+  - name: Zip full backup, secrets and config, and ssh_host keys
+    ansible.builtin.shell: "zip --password {{ ZIP_PASS | quote }} -r /home/infra/full-backup-{{ backup_filename }}.zip '/var/opt/gitlab/backups/{{ backup_filename }}' /etc/gitlab/gitlab.rb /etc/gitlab/gitlab-secrets.json $(echo /etc/ssh/ssh_host_*)"
+
+  - name: Upload full backup to ftp server
+    ansible.builtin.shell: curl -T '/home/infra/full-backup-{{ backup_filename }}.zip' {{ FTP_SERVER }} --user {{ FTP_USER | quote }}:{{ FTP_PASS | quote }}
+
+  - name: Remove backup temp file
+    ansible.builtin.file:
+      path: '/var/opt/gitlab/backups/{{ backup_filename }}'
+      state: absent
+
+  - name: Remove full backup zip
+    ansible.builtin.file:
+      path: '/home/infra/full-backup-{{ backup_filename }}.zip'
+      state: absent

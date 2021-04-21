@@ -1,0 +1,37 @@
+- hosts: masters
+  become: yes
+  remote_user: infra
+
+  tasks:
+  - name: Initialize the cluster
+    shell: kubeadm init --pod-network-cidr=10.0.5.0/24
+    #--ignore-preflight-errors=CRI
+    #>> cluster_initialized.txt
+    args:
+      chdir: $HOME
+      creates: cluster_initialized.txt
+    register: result
+  - debug: var=result
+  
+  - name: Create .kube directory
+    file:
+      path: $HOME/.kube
+      state: directory
+      mode: 0755
+    register: result
+  - debug: var=result
+  
+  - name: Copy admin.conf to user's kube config
+    copy:
+      src: /etc/kubernetes/admin.conf
+      dest: /home/infra/.kube/config
+      remote_src: yes
+      owner: infra
+
+  - name: Install Pod network
+    shell: |
+      kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml >> pod_network_setup.txt
+      kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml >> pod_network_setup.txt
+    args:
+      chdir: $HOME
+      creates: pod_network_setup.txt

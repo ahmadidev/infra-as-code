@@ -1,0 +1,19 @@
+- name: Config haproxy
+  hosts: haproxy
+  become: yes
+  remote_user: infra
+
+  tasks:
+  - name: Copy config to /etc/haproxy/haproxy.cfg
+    ansible.builtin.copy:
+      src: haproxy.cfg
+      dest: /etc/haproxy/haproxy.cfg
+      validate: haproxy -c -f %s
+    notify:
+      - Restart haproxy
+
+  handlers:
+  - name: Restart haproxy
+    ansible.builtin.service:
+      name: haproxy.service
+      state: restarted
